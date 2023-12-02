@@ -1,0 +1,53 @@
+#%%
+import yfinance as yf
+import pandas as pd
+from sklearn.cluster import KMeans
+import numpy as np
+import matplotlib.pyplot as plt
+
+#%% List of stock symbols
+stocks = [
+    "AAPL", "ABBV", "ABT", "ACN", "ADBE", "AIG", "AMD", "AMGN", "AMT", "AMZN", 
+    "AVGO", "AXP", "BA", "BAC", "BK", "BKNG", "BLK", "BMY", "C", "CAT", 
+    "CHTR", "CL", "CMCSA", "COF", "COP", "COST", "CRM", "CSCO", "CVS", "CVX", 
+    "DE", "DHR", "DIS", "DOW", "DUK", "EMR", "EXC", "F", "FDX", "GD", "GE", "GILD", 
+    "GM", "GOOG", "GOOGL", "GS", "HD", "HON", "IBM", "INTC", "JNJ", "JPM", "KHC", 
+    "KO", "LIN", "LLY", "LMT", "LOW", "MA", "MCD", "MDLZ", "MDT", "MET", "META", 
+    "MMM", "MO", "MRK", "MS", "MSFT", "NEE", "NFLX", "NKE", "NVDA", "ORCL", "PEP", 
+    "PFE", "PG", "PM", "PYPL", "QCOM", "RTX", "SBUX", "SCHW", "SO", "SPG", "T", 
+    "TGT", "TMO", "TMUS", "TSLA", "TXN", "UNH", "UNP", "UPS", "USB", "V", "VZ", 
+    "WFC", "WMT", "XOM"
+]
+
+#%% Fetching data and calculating standard deviation and total return
+std_devs = []
+total_returns = []
+
+for stock in stocks:
+    data = yf.download(stock, start="2020-03-20", interval="1wk")
+    weekly_returns = data['Adj Close'].pct_change()
+    std_dev = weekly_returns.std()
+    total_return = (data['Adj Close'][-1] / data['Adj Close'][0]) - 1
+    std_devs.append(std_dev)
+    total_returns.append(total_return)
+
+#%% Preparing data for K-means clustering
+data_for_clustering = np.column_stack((std_devs, total_returns))
+
+#%% K-means clustering with 3 clusters
+kmeans = KMeans(n_clusters=3, random_state=0).fit(data_for_clustering)
+labels = kmeans.labels_
+
+#%% Plotting the clusters
+plt.figure(figsize=(10, 6))
+colors = ['red', 'green', 'blue']
+
+for i in range(3):
+    plt.scatter(data_for_clustering[labels == i, 0], data_for_clustering[labels == i, 1], 
+                color=colors[i], label=f'Cluster {i+1}')
+
+plt.title('Stock Clusters based on Standard Deviation and Total Return')
+plt.xlabel('Standard Deviation')
+plt.ylabel('Total Return')
+plt.legend()
+plt.show()
